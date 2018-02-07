@@ -1,11 +1,14 @@
 from PIL import Image
+from misc import print_progress
+
 import numpy as np
 import os
+import time
 
 # has to be x , x
 IMAGESIZE = 250, 250
 
-PATH_CALTECH = "Caltech256LeftOut"
+PATH_CALTECH = "Caltech256"
 PATH_LFW = "lfw"
 
 def loadBWPic(path):
@@ -44,6 +47,8 @@ def loadDataset(path):
 
     images = np.zeros([count, IMAGESIZE[0], IMAGESIZE[1]])
 
+    start = int(round(time.time()))
+
     #import all images to array
     i = 0
     for dir in os.listdir(path):
@@ -51,21 +56,19 @@ def loadDataset(path):
             if file.endswith(".jpg"):
                 imgPath = os.path.join(path, dir, file)
                 images[i] = loadBWPic(imgPath)
+                print_progress(i, count, start_time_seconds=start)
                 i = i + 1
-                if i % 1000 == 0:
-                    print(i)
 
-    print("%d files loaded" % i)
+    print("\n%d files loaded" % i)
     return images
 
 caltech = loadDataset(PATH_CALTECH)
-caltech2 = loadDataset(PATH_CALTECH)
+lfw = loadDataset(PATH_LFW)
 
-training = np.concatenate((caltech, caltech2))
+dataset = np.concatenate((caltech, lfw))
 
-print(training.shape)
+print(dataset.shape)
 
 showImage(caltech[400])
 
-image = loadBWPic('Caltech256/008.bathtub/008_0001.jpg')
 #showImage(image)
