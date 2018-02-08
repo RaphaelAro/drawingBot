@@ -126,6 +126,8 @@ def main(argv):
     )
     eval_results = classifier.evaluate(input_fn=eval_input_fn)
     print(eval_results)
+    classifier.export_savedmodel(
+        export_dir_base="saves/estimator", serving_input_receiver_fn=cnnModel)
 
 
 if __name__ == "__main__":

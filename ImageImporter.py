@@ -8,8 +8,8 @@ import time
 # has to be x , x
 IMAGESIZE = 128, 128
 
-PATH_CALTECH = "Caltech256"
-PATH_LFW = "lfw"
+PATH_CALTECH = "Caltech256LeftOut"
+PATH_LFW = "Caltech256LeftOut"
 
 def loadBWPic(path):
     image = Image.open(path).convert('LA')
