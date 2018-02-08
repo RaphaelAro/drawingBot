@@ -33,6 +33,7 @@ def loadBWPic(path):
     return image
 
 def showImage(image):
+    image = np.resize(image, IMAGESIZE)
     PILImage = Image.fromarray(np.uint8(np.round(image * 255)))
     PILImage.show()
     return
@@ -67,7 +68,6 @@ def loadDataset(path, label):
                 i = i + 1
                 print_progress(i, count, start_time_seconds=start)
 
-    print("%d files loaded" % i)
     return (images, labels)
 
 def trainingData():

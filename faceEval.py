@@ -118,6 +118,9 @@ def main(argv):
     )
 
     # Evaluate the model and print results
+
+    #pics = [loadBWPic("C:/Users/Raphael/Desktop/BA/ErsterStand/table.jpg")]
+    #eval_data = np.asarray(pics, dtype=np.float32)
     eval_input_fn = tf.estimator.inputs.numpy_input_fn(
         x={"x": eval_data},
         y=eval_labels,
@@ -125,6 +128,7 @@ def main(argv):
         shuffle=False
     )
     eval_results = classifier.evaluate(input_fn=eval_input_fn)
+    #eval_results = list(eval_results)
     print(eval_results)
 
 
