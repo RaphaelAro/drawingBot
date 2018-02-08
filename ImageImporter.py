@@ -6,7 +6,7 @@ import os
 import time
 
 # has to be x , x
-IMAGESIZE = 250, 250
+IMAGESIZE = 128, 128
 
 PATH_CALTECH = "Caltech256"
 PATH_LFW = "lfw"
@@ -29,6 +29,7 @@ def loadBWPic(path):
 
     image = np.asarray(image)
     image = np.array(image[:,:,0]) / 255.0
+    image = image.flatten()
     return image
 
 def showImage(image):
@@ -36,7 +37,12 @@ def showImage(image):
     PILImage.show()
     return
 
-def loadDataset(path):
+def saveImage(image, path):
+    PILImage = Image.fromarray(np.uint8(np.round(image * 255)))
+    PILImage.save(path)
+    return
+
+def loadDataset(path, label):
     #Determine number of images
     count = 0
     for dir in os.listdir(path):
@@ -45,7 +51,9 @@ def loadDataset(path):
                 count = count + 1
     print("loading dataset from " + path + " (%d images) ..." % count)
 
-    images = np.zeros([count, IMAGESIZE[0], IMAGESIZE[1]])
+    images = np.zeros([count, IMAGESIZE[0] * IMAGESIZE[1]])
+    labels = np.empty(count)
+    labels.fill(label)
 
     start = int(round(time.time()))
 
@@ -56,19 +64,36 @@ def loadDataset(path):
             if file.endswith(".jpg"):
                 imgPath = os.path.join(path, dir, file)
                 images[i] = loadBWPic(imgPath)
-                print_progress(i, count, start_time_seconds=start)
                 i = i + 1
+                print_progress(i, count, start_time_seconds=start)
 
-    print("\n%d files loaded" % i)
-    return images
+    print("%d files loaded" % i)
+    return (images, labels)
 
-caltech = loadDataset(PATH_CALTECH)
-lfw = loadDataset(PATH_LFW)
+def trainingData():
+    caltech = loadDataset(PATH_CALTECH, 0)
+    lfw = loadDataset(PATH_LFW, 1)
 
-dataset = np.concatenate((caltech, lfw))
+    print("concatenating datasets...")
+    dataset = np.concatenate((caltech[0], lfw[0]))
+    print("concatenating labels...")
+    labels = np.concatenate((caltech[1], lfw[1]))
 
-print(dataset.shape)
+    print("shuffle...")
+    seed = int(round(time.time()))
 
-showImage(caltech[400])
+    #Use same seed for both arrays!
+    np.random.seed(seed)
+    np.random.shuffle(dataset)
+    np.random.seed(seed)
+    np.random.shuffle(labels)
 
-#showImage(image)
+    return (dataset, labels)
+
+
+if __name__ == "__main__":
+  test = trainingData()
+  data = test[0]
+  labels = test[1]
+  showImage(data[0])
+  print(labels[0])

@@ -1,4 +1,5 @@
 .idea/
+__pycache__/
 Caltech256/
 Caltech256LeftOut/
 lfw/
