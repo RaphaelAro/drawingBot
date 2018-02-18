@@ -1,7 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import tensorflow as tf
 import numpy as np
 
@@ -9,17 +5,11 @@ from misc import *
 from ImageImporter import *
 
 #Path where to save trained model
-MODEL_SAVE_TO = "Model"
+DIR_ESTIMATOR = "estimator"
+DIR_MODEL = "model"
 
-feature_spec = {"input" : tf.FixedLenSequenceFeature(shape=[16384], dtype=tf.float32, allow_missing=True)}
-
-def serving_input_receiver_fn():
-    #serialized_tf_example = tf.placeholder(shape=[None], dtype=tf.string)
-    #inputs = {"predictorInput" : serialized_tf_example}
-    #features = tf.parse_example(serialized_tf_example, feature_spec)
-    #return tf.estimator.export.ServingInputReceiver(features, inputs)
-    feature_tensor = {"x" : tf.placeholder(tf.float32, [None, 16384])}
-    return tf.estimator.export.ServingInputReceiver(feature_tensor, feature_tensor)
+BATCH_SIZE = 100
+TRAINING_ITERATIONS = 20000
 
 
 def cnnModel(features, labels, mode):
@@ -77,8 +67,12 @@ def cnnModel(features, labels, mode):
         "probabilities" : tf.nn.softmax(logits, name="softmax_tensor")
     }
 
+    prediction_output = tf.estimator.export.PredictOutput({"classes": tf.argmax(input=logits, axis=1),
+                "probabilities": tf.nn.softmax(logits, name="softmax_tensor")})
+
     if mode == tf.estimator.ModeKeys.PREDICT:
-        return tf.estimator.EstimatorSpec(mode=mode, predictions=predictions)
+        return tf.estimator.EstimatorSpec(mode=mode, predictions=predictions,
+                export_outputs={tf.saved_model.signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY: prediction_output})
 
     onehot_labels = tf.one_hot(indices=tf.cast(labels, tf.int32), depth=2)
     loss = tf.losses.softmax_cross_entropy(
@@ -117,30 +111,28 @@ def main(argv):
 
     # Create the Estimator
     classifier = tf.estimator.Estimator(
-        model_fn=cnnModel, model_dir=MODEL_SAVE_TO)
+        model_fn=cnnModel, model_dir=DIR_ESTIMATOR)
 
     # Set up logging for predictions
     tensors_to_log = {"probabilities": "softmax_tensor"}
     logging_hook = tf.train.LoggingTensorHook(
-        tensors=tensors_to_log, every_n_iter=5)
+        tensors=tensors_to_log, every_n_iter=500)
 
     train_input_fn = tf.estimator.inputs.numpy_input_fn(
-        x={"x" : train_data},
+        x={"x": train_data},
         y=train_labels,
-        batch_size=2,
+        batch_size=BATCH_SIZE,
         num_epochs=None,
         shuffle=True
     )
+
     classifier.train(
         input_fn=train_input_fn,
-        steps=10,
+        steps=TRAINING_ITERATIONS,
         hooks=[logging_hook]
     )
 
     # Evaluate the model and print results
-
-    #pics = [loadBWPic("C:/Users/Raphael/Desktop/BA/ErsterStand/table.jpg")]
-    #eval_data = np.asarray(pics, dtype=np.float32)
     eval_input_fn = tf.estimator.inputs.numpy_input_fn(
         x={"x": eval_data},
         y=eval_labels,
@@ -148,14 +140,16 @@ def main(argv):
         shuffle=False
     )
     eval_results = classifier.evaluate(input_fn=eval_input_fn)
-    #eval_results = list(eval_results)
     print(eval_results)
 
+
     # Save model
-    # Set up Saver
-    # serving_input_receiver_fn = tf.estimator.export.build_parsing_serving_input_receiver_fn(feature_spec)
-    classifier.export_savedmodel(MODEL_SAVE_TO, serving_input_receiver_fn)
-    print("Saved model to '%s'..." % MODEL_SAVE_TO)
+    def serving_input_receiver_fn():
+        feature_tensor = tf.placeholder(dtype=tf.float32, shape=[None, 16384])
+        return tf.estimator.export.ServingInputReceiver({'x': feature_tensor}, {'x': feature_tensor})
+
+    classifier.export_savedmodel(DIR_MODEL, serving_input_receiver_fn)
+    print("Saved model to '%s'..." % DIR_MODEL)
 
 
 if __name__ == "__main__":

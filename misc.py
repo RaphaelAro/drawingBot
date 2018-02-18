@@ -4,7 +4,7 @@ import time
 # Print iterations progress
 # Originally from Stack Overflow, but with a couple of fixes to work in PyCharm:
 # https://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console
-def print_progress(iteration, total, prefix='', suffix='', decimals=1, length=100, fill='▋', accuracy=0.0, start_time_seconds=0):
+def print_progress(iteration, total, prefix='', suffix='', decimals=1, length=100, fill='▋', start_time_seconds=0):
     """
     Call in a loop to create terminal progress bar
     @params:
@@ -27,8 +27,8 @@ def print_progress(iteration, total, prefix='', suffix='', decimals=1, length=10
         estimate = int(round(estimate / progress * (1- progress)))
 
     bar = fill * fl + ' ' * (length - fl)
-    sys.stdout.write('\r%s |%s| %s%% %s (remaining: ~%s s, accuracy: %s)'
-                     % (prefix, bar, percent, suffix, estimate, accuracy))
+    sys.stdout.write('\r%s |%s| %s%% %s (remaining: ~%s s)'
+                     % (prefix, bar, percent, suffix, estimate))
     # Print New Line on Complete
     if iteration == total:
         print()
