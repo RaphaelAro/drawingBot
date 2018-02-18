@@ -1,8 +1,26 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import tensorflow as tf
 import numpy as np
 
 from misc import *
 from ImageImporter import *
+
+#Path where to save trained model
+MODEL_SAVE_TO = "Model"
+
+feature_spec = {"input" : tf.FixedLenSequenceFeature(shape=[16384], dtype=tf.float32, allow_missing=True)}
+
+def serving_input_receiver_fn():
+    #serialized_tf_example = tf.placeholder(shape=[None], dtype=tf.string)
+    #inputs = {"predictorInput" : serialized_tf_example}
+    #features = tf.parse_example(serialized_tf_example, feature_spec)
+    #return tf.estimator.export.ServingInputReceiver(features, inputs)
+    feature_tensor = {"x" : tf.placeholder(tf.float32, [None, 16384])}
+    return tf.estimator.export.ServingInputReceiver(feature_tensor, feature_tensor)
+
 
 def cnnModel(features, labels, mode):
     input_layer = tf.reshape(features["x"], [-1, 128, 128, 1])
@@ -95,25 +113,27 @@ def main(argv):
     train_data = train_data[0:devide]
     train_labels = train_labels[0:devide]
 
+
+
     # Create the Estimator
     classifier = tf.estimator.Estimator(
-        model_fn=cnnModel, model_dir="/tmp/mnist_convnet_model2")
+        model_fn=cnnModel, model_dir=MODEL_SAVE_TO)
 
     # Set up logging for predictions
     tensors_to_log = {"probabilities": "softmax_tensor"}
     logging_hook = tf.train.LoggingTensorHook(
-        tensors=tensors_to_log, every_n_iter=50)
+        tensors=tensors_to_log, every_n_iter=5)
 
     train_input_fn = tf.estimator.inputs.numpy_input_fn(
         x={"x" : train_data},
         y=train_labels,
-        batch_size=100,
+        batch_size=2,
         num_epochs=None,
         shuffle=True
     )
     classifier.train(
         input_fn=train_input_fn,
-        steps=2000,
+        steps=10,
         hooks=[logging_hook]
     )
 
@@ -130,6 +150,12 @@ def main(argv):
     eval_results = classifier.evaluate(input_fn=eval_input_fn)
     #eval_results = list(eval_results)
     print(eval_results)
+
+    # Save model
+    # Set up Saver
+    # serving_input_receiver_fn = tf.estimator.export.build_parsing_serving_input_receiver_fn(feature_spec)
+    classifier.export_savedmodel(MODEL_SAVE_TO, serving_input_receiver_fn)
+    print("Saved model to '%s'..." % MODEL_SAVE_TO)
 
 
 if __name__ == "__main__":
